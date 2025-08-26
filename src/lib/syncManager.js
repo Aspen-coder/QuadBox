@@ -88,3 +88,28 @@ export async function syncGames() {
 
   console.log('Sync complete.')
 }
+
+
+export async function saveGameToCloud(game) {
+  const user = auth.currentUser
+  if (!user) return
+
+  const today = new Date(game.timestamp || Date.now()).toISOString().split('T')[0]
+  const dayDocRef = doc(db, 'userScores', user.uid, 'days', today)
+
+  try {
+    await setDoc(dayDocRef, {
+      scores: arrayUnion({
+        timestamp: game.timestamp || Date.now(),
+        nBack: game.nBack,
+        scores: game.scores,
+        total: game.total,
+        completedTrials: game.completedTrials,
+        status: game.status
+      })
+    }, { merge: true })
+    console.log('Game saved to Firestore:', game.timestamp)
+  } catch (err) {
+    console.error('Error saving game to Firestore:', err)
+  }
+}

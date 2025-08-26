@@ -3,6 +3,7 @@ import { get } from 'svelte/store'
 import { autoProgression } from '../stores/autoProgressionStore'
 import { settings } from '../stores/settingsStore'
 import { gameSettings } from '../stores/gameSettingsStore'
+import { saveGameToCloud } from './syncManager'
 
 const takeUntil = (array, condition) => {
   const i = array.findIndex(condition)
@@ -28,10 +29,13 @@ export const runAutoProgression = async (gameInfo) => {
   if (successGames.length >= successComboRequired && successGames.every(game => (game.total.percent * 100) >= successCriteria)) {
     gameSettings.setField('nBack', Math.min(gameInfo.nBack + 1, 12))
     await addGame({ ...gameInfo, status: 'tombstone' }) 
+    // save game to cloud as well
+    await saveGameToCloud(gameInfo)
     autoProgression.advance()
   } else if (failureGames.length >= failureComboRequired && failureGames.every(game => (game.total.percent * 100) < failureCriteria)) {
     gameSettings.setField('nBack', Math.max(gameInfo.nBack - 1, 1))
     await addGame({ ...gameInfo, status: 'tombstone' }) 
+    await saveGameToCloud(gameInfo)
     autoProgression.fallback()
   }
 }
