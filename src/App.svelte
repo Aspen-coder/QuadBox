@@ -13,6 +13,9 @@ import { onMount, onDestroy } from "svelte"
 import { getAudioPool } from "./lib/constants"
 import { audioPlayer } from "./lib/audioPlayer"
 import { runAutoProgression } from "./lib/autoProgression"
+import { auth, loadGameSettingsFromFirestore, saveGameSettingsToFirestore, setupGameSettingsListener, unsubscribeGameSettings } from './lib/firebaseService';
+import { onAuthStateChanged } from 'firebase/auth';
+import { writable, get } from 'svelte/store';
 
 let isPlaying
 let trials
@@ -23,6 +26,40 @@ let gameInfo
 let presentation
 let timeoutCancelFns
 let gameId = 0
+
+const currentUser = writable(null);
+let saveTimeout;
+
+// Listen for auth state changes
+onAuthStateChanged(auth, async (user) => {
+  $currentUser = user;
+  if (user) {
+    // User logged in - load their settings and set up listener
+    try {
+      const firestoreSettings = await loadGameSettingsFromFirestore();
+      if (firestoreSettings) {
+        settings.update(current => ({
+          ...current,
+          gameSettings: firestoreSettings
+        }));
+      } else {
+        // If no settings exist in Firestore, save current local settings
+        await saveGameSettingsToFirestore(get(settings).gameSettings);
+      }
+      setupGameSettingsListener((updatedSettings) => {
+        settings.update(current => ({
+          ...current,
+          gameSettings: updatedSettings
+        }));
+      });
+    } catch (error) {
+      console.error("Error during initial settings load/setup:", error);
+    }
+  } else {
+    // User logged out - unsubscribe from listener
+    unsubscribeGameSettings();
+  }
+});
 
 const resetRuntimeData = () => {
   isPlaying = false
@@ -100,7 +137,7 @@ const endGame = async (status) => {
 
   if (trialsIndex > gameInfo.nBack) {
     gameInfo.timestamp = Date.now()
-    await analytics.scoreTrials(gameInfo, status === 'completed' ? scoresheet : scoresheet.slice(0, trialsIndex), status)
+    await analytics.scoreTrials(gameInfo, status === 'completed' ? scoresheet : scoresheet.slice(0, trialsIndex), status, gameInfo.nBack)
     if (status === 'completed') {
       await runAutoProgression(gameInfo)
     }
@@ -237,13 +274,14 @@ onDestroy(async () => {
   document.removeEventListener('keydown', handleKey)
   document.removeEventListener('touchstart', handleTouchStart)
   document.removeEventListener('touchmove', handleTouchMove)
+  unsubscribeGameSettings(); // Unsubscribe on component destroy
 })
 
 </script>
 
 <main data-theme={theme} class={$settings.theme}>
 <ErrorDisplay />
-<Drawer {title} {isPlaying}>
+<Drawer {title} {isPlaying} {currentUser}>
     <Cube trial={currentTrial} {presentation} />
     {#if isMobile}
     <div class="stretch grid grid-rows-[1fr_7fr_2fr] md:grid-rows-[1fr_8fr_2fr] gap-1">

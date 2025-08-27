@@ -13,33 +13,61 @@ import ThemeSwapper from './ThemeSwapper.svelte'
 import ChartPopup from "./ChartPopup.svelte"
 import KeybindingsPopup from "./KeybindingsPopup.svelte"
 import InfoPopup from './InfoPopup.svelte'
-export let isPlaying = false
-let open = false
+import { saveGameSettingsToFirestore, auth } from '../lib/firebaseService'
+import { get } from 'svelte/store'
 
-const toggle = () => open = !open
-const close = () => open = false
+export let isPlaying = false
+export let currentUser // Accept currentUser store as prop
+let open = false
+let saveTimeout
 
 let drawerRef
 let panelButtonRef
 
+const toggle = () => open = !open
+const close = () => open = false
+
+const debouncedSaveSettings = () => {
+  if (get(currentUser)) { // Use the passed currentUser store
+    clearTimeout(saveTimeout);
+    saveTimeout = setTimeout(async () => {
+      await saveGameSettingsToFirestore(get(settings).gameSettings);
+    }, 1000); // 1 second delay
+  }
+}
+
 const handleClickOutside = (event) => {
-  if (open && !drawerRef.contains(event.target) && !panelButtonRef.contains(event.target)) {
+  if (open && drawerRef && panelButtonRef && !drawerRef.contains(event.target) && !panelButtonRef.contains(event.target)) {
     close()
   }
 }
 
 const updateSuccessCriteria = (value) => {
-  settings.update('successCriteria', value)
+  settings.update(current => ({
+    ...current,
+    successCriteria: value
+  }))
   if ($settings.failureCriteria > value) {
-    settings.update('failureCriteria', value)
+    settings.update(current => ({
+      ...current,
+      failureCriteria: value
+    }))
   }
+  debouncedSaveSettings();
 }
 
 const updateFailureCriteria = (value) => {
-  settings.update('failureCriteria', value)
+  settings.update(current => ({
+    ...current,
+    failureCriteria: value
+  }))
   if ($settings.successCriteria < value) {
-    settings.update('successCriteria', value)
+    settings.update(current => ({
+      ...current,
+      successCriteria: value
+    }))
   }
+  debouncedSaveSettings();
 }
 
 onMount(() => {
@@ -102,12 +130,12 @@ $: gameSettings = $settings.gameSettings[$settings.mode]
           <ThemeSwapper />
         </div>
         <div class="w-full border-b-1 my-1"></div>
-        <ModeSwapper />
-        <GameSettings />
+        <ModeSwapper on:change={debouncedSaveSettings} />
+        <GameSettings {debouncedSaveSettings} />
         <div class="py-2 divider"></div>
         <div class="grid grid-cols-[4fr_6fr] items-center gap-4">
           <span class="text-lg">Feedback:</span>
-          <select bind:value={$settings.feedback} id="feedback-select" class="select">
+          <select bind:value={$settings.feedback} on:change={debouncedSaveSettings} id="feedback-select" class="select">
             <option value="show">Show</option>
             <option value="hide">Hide</option>
             <option value="hide-counter">Hide counter only</option>
@@ -115,7 +143,7 @@ $: gameSettings = $settings.gameSettings[$settings.mode]
         </div>
         <div class="grid grid-cols-[4fr_6fr] items-center gap-4">
           <span class="text-lg">Voice:</span>
-          <select bind:value={$settings.audioSource} id="audio-select" class="select">
+          <select bind:value={$settings.audioSource} on:change={debouncedSaveSettings} id="audio-select" class="select">
             <option value="letters2">Letters A</option>
             <option value="letters">Letters B</option>
             <option value="numbers">Numbers</option>
@@ -127,14 +155,14 @@ $: gameSettings = $settings.gameSettings[$settings.mode]
         <div class="flex flex-col gap-1">
           <div class="grid grid-cols-[3fr_1fr] items-center">
             <label for="rotation-speed-range" class="text-lg">Rotation speed:</label>
-            <input type="number" min="0" max="999" bind:value={$settings.rotationSpeed} step="1" class="input" />
+            <input type="number" min="0" max="999" bind:value={$settings.rotationSpeed} on:input={debouncedSaveSettings} step="1" class="input" />
           </div>
-          <input id="rotation-speed-range" type="range" min="1" max="120" bind:value={$settings.rotationSpeed} step="1" class="range" />
+          <input id="rotation-speed-range" type="range" min="1" max="120" bind:value={$settings.rotationSpeed} on:input={debouncedSaveSettings} step="1" class="range" />
         </div>
         <div class="divider"></div>
         <div class="grid grid-cols-[8fr_2fr] items-center">
           <label for="enable-auto-progression" class="text-lg">Auto progression:</label>
-          <input id="enable-auto-progression" type="checkbox" bind:checked={$settings.enableAutoProgression} class="toggle" />
+          <input id="enable-auto-progression" type="checkbox" bind:checked={$settings.enableAutoProgression} on:change={debouncedSaveSettings} class="toggle" />
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-lg">When ≥ {$settings.successCriteria}%
@@ -143,7 +171,7 @@ $: gameSettings = $settings.gameSettings[$settings.mode]
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-lg">Win after: {$settings.successComboRequired} in a row
-            <input disabled={!$settings.enableAutoProgression} type="range" min="1" max="9" bind:value={$settings.successComboRequired} step="1" class="range" />
+            <input disabled={!$settings.enableAutoProgression} type="range" min="1" max="9" bind:value={$settings.successComboRequired} on:input={debouncedSaveSettings} step="1" class="range" />
           </label>
         </div>
         <div class="flex flex-col gap-1 mt-4">
@@ -153,7 +181,7 @@ $: gameSettings = $settings.gameSettings[$settings.mode]
         </div>
         <div class="flex flex-col gap-1">
           <label class="text-lg">Lose after: {$settings.failureComboRequired} in a row
-            <input disabled={!$settings.enableAutoProgression} type="range" min="1" max="9" bind:value={$settings.failureComboRequired} step="1" class="range" />
+            <input disabled={!$settings.enableAutoProgression} type="range" min="1" max="9" bind:value={$settings.failureComboRequired} on:input={debouncedSaveSettings} step="1" class="range" />
           </label>
         </div>
         <div class="my-1"></div>

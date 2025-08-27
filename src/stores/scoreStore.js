@@ -57,6 +57,7 @@ export const scores = (() => {
 
       internal.set(allScores)
       console.log('Scores loaded from Firestore')
+      console.log(allScores)
     } catch (error) {
       console.error('Error loading scores:', error)
     }

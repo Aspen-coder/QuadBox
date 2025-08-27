@@ -30,12 +30,12 @@ export const runAutoProgression = async (gameInfo) => {
     gameSettings.setField('nBack', Math.min(gameInfo.nBack + 1, 12))
     await addGame({ ...gameInfo, status: 'tombstone' }) 
     // save game to cloud as well
-    await saveGameToCloud(gameInfo)
+    //await saveGameToCloud(gameInfo)
     autoProgression.advance()
   } else if (failureGames.length >= failureComboRequired && failureGames.every(game => (game.total.percent * 100) < failureCriteria)) {
     gameSettings.setField('nBack', Math.max(gameInfo.nBack - 1, 1))
     await addGame({ ...gameInfo, status: 'tombstone' }) 
-    await saveGameToCloud(gameInfo)
+    //await saveGameToCloud(gameInfo)
     autoProgression.fallback()
   }
 }

@@ -3,11 +3,14 @@
   import { settings } from "../stores/settingsStore"
   import { Info } from "@lucide/svelte"
 
+  export let debouncedSaveSettings
+
   const clampNumber = (field, min, value, max) => {
     if (value < min || max < value) {
       return
     }
     gameSettings.setField(field, value)
+    debouncedSaveSettings()
   }
 
   const toggleShapeOrColor = (event, field) => {
@@ -15,6 +18,7 @@
     if (event.target.checked) { // Fixed: was event.target.value
       gameSettings.setField('enableShapeColor', false)
     }
+    debouncedSaveSettings()
   }
 
   const toggleShapeAndColor = (event) => {
@@ -23,23 +27,28 @@
       gameSettings.setField('enableShape', false)
       gameSettings.setField('enableColor', false)
     }
+    debouncedSaveSettings()
   }
 
   // For range inputs, we need to handle them differently since they update frequently
   const handleRangeChange = (field, value) => {
     gameSettings.setField(field, value)
+    debouncedSaveSettings()
+  }
+
+  const handleCheckboxChange = (field, value) => {
+    gameSettings.setField(field, value)
+    debouncedSaveSettings()
+  }
+
+  const handleNumberChange = (field, value) => {
+    gameSettings.setField(field, value)
+    debouncedSaveSettings()
   }
 
   $: numTrials = $gameSettings?.numTrials || 0
   
-  // Add loading state from the Firebase store
-  $: loading = $gameSettings?.loading || false
 </script>
-
-<!-- Optional: Show loading state -->
-{#if loading}
-  <div class="text-sm text-gray-500 mb-2">Syncing settings...</div>
-{/if}
 
 <div class="flex flex-col gap-1">
   <label class="text-lg">N-back: {$gameSettings?.nBack || 1}
@@ -131,7 +140,7 @@
     id="enable-audio" 
     type="checkbox" 
     checked={$gameSettings?.enableAudio || false}
-    on:change={(e) => gameSettings.setField('enableAudio', e.target.checked)}
+    on:change={(e) => handleCheckboxChange('enableAudio', e.target.checked)}
     class="toggle" 
   />
 </div>

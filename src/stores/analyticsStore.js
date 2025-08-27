@@ -1,16 +1,18 @@
 import { writable } from 'svelte/store'
 import { addGame } from '../lib/gamedb'
-import { saveGameToCloud } from '../lib/syncManager'
 import { formatSeconds } from '../lib/utils'
 import { getLastRecentGame, getPlayTimeSince4AM } from '../lib/gamedb'
+import { saveScoreToFirestore, loadScoresFromFirestore } from '../lib/firebaseService'
 
 const loadAnalytics = async () => {
   const lastGame = await getLastRecentGame()
   const playTime = await getPlayTimeSince4AM()
+  const firebaseScores = await loadScoresFromFirestore()
 
   return {
     lastGame,
     playTime: playTime > 0 ? formatSeconds(playTime) : null,
+    firebaseScores: firebaseScores || [],
   }
 }
 
@@ -37,7 +39,9 @@ const computeTotal = (game) => {
 
 const createAnalyticsStore = () => {
   const { subscribe, set } = writable({})
-  loadAnalytics().then(analytics => set(analytics))
+  // Initialize with an empty object and then load data asynchronously
+  set({ lastGame: null, playTime: null, firebaseScores: [] });
+  loadAnalytics().then(analyticsData => set(analyticsData));
 
   return {
     subscribe,
@@ -79,17 +83,17 @@ const createAnalyticsStore = () => {
       await addGame(gameObj)
 
       // Save to Firestore
-      await saveGameToCloud({
-        timestamp: gameObj.timestamp,
-        nBack: gameObj.nBack,
-        scores: gameObj.scores,
-        completedTrials: gameObj.completedTrials,
-        status: gameObj.status,
-        total: gameObj.total
-      })
+      await saveScoreToFirestore(gameObj)
 
       // Reload analytics store
       set(await loadAnalytics())
+    },
+    loadFirebaseScores: async () => {
+        const scores = await loadScoresFromFirestore();
+        analytics.update(current => ({
+            ...current,
+            firebaseScores: scores || []
+        }));
     }
   }
 }

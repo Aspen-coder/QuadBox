@@ -1,6 +1,11 @@
 <script>
   import { settings } from '../stores/settingsStore'
   import { Triangle } from '@lucide/svelte'
+  import { createEventDispatcher } from 'svelte';
+  import { get } from 'svelte/store';
+
+  const dispatch = createEventDispatcher();
+
   $: mode = $settings.mode
 
   const darkColors = new Map([
@@ -24,7 +29,10 @@
     if (nextIndex > modes.length - 1) {
       nextIndex = 0
     }
-    settings.update('mode', modes[nextIndex])
+    console.log('Settings object in nextMode:', settings);
+    console.log('Type of settings.subscribe:', typeof settings.subscribe);
+    settings.update(current => ({...current, mode: modes[nextIndex]}))
+    dispatch('change');
   }
 
   const prevMode = () => {
@@ -32,7 +40,10 @@
     if (prevIndex < 0) {
       prevIndex = modes.length - 1
     }
-    settings.update('mode', modes[prevIndex])
+    console.log('Settings object in prevMode:', settings);
+    console.log('Type of settings.subscribe:', typeof settings.subscribe);
+    settings.update(current => ({...current, mode: modes[prevIndex]}))
+    dispatch('change');
   }
 </script>
 

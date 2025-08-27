@@ -86,12 +86,12 @@ const createSettingsStore = () => {
     subscribe,
     get,
     set: (value) => {
-      saveSettings(value)
       set(value)
+      saveSettings(value)
     },
-    update: (key, value) => {
+    update: (callback) => {
       update(current => {
-        const updated = { ...current, [key]: value }
+        const updated = callback(current)
         saveSettings(updated)
         return updated
       })
