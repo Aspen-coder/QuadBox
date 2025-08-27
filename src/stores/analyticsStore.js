@@ -136,7 +136,7 @@ const createAnalyticsStore = () => {
   return {
     subscribe,
     scoreTrials: async (gameInfo, scoresheet, status, nBack) => {
-      // Build scores object (removed as computeTotal now handles this)
+      // Build scores object
       const scores = {}
       for (const tag of gameInfo.tags) {
         scores[tag] = { hits: 0, misses: 0 }

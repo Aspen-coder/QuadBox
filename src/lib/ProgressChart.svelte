@@ -94,8 +94,10 @@
   const getDailyAveragesByTitle = (games) => {
     const grouped = {}
 
-    for (const { ncalc, title, dayTimestamp } of games) {
-      if (!title || !('ncalc' in game)) continue // Ensure ncalc exists directly on game object
+    for (const game of games) {
+      const { ncalc, title, dayTimestamp } = game || {}; // Safely destructure with default empty object
+
+      if (!title || !('ncalc' in game) || dayTimestamp === undefined) continue; // Ensure properties exist
 
       if (!grouped[title]) grouped[title] = {}
       if (!grouped[title][dayTimestamp]) grouped[title][dayTimestamp] = []
