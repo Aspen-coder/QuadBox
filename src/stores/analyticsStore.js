@@ -38,7 +38,7 @@ const computeTotal = (game) => {
 }
 
 const createAnalyticsStore = () => {
-  const { subscribe, set } = writable({})
+  const { subscribe, set, update } = writable({})
   // Initialize with an empty object and then load data asynchronously
   set({ lastGame: null, playTime: null, firebaseScores: [] });
   loadAnalytics().then(analyticsData => set(analyticsData));
@@ -90,7 +90,7 @@ const createAnalyticsStore = () => {
     },
     loadFirebaseScores: async () => {
         const scores = await loadScoresFromFirestore();
-        analytics.update(current => ({
+        update(current => ({
             ...current,
             firebaseScores: scores || []
         }));
