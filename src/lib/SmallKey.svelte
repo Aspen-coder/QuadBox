@@ -1,12 +1,12 @@
 <script>
-  import { scores } from "../stores/scoreStore"
+  import { analytics } from "../stores/analyticsStore"
   import { feedback } from "../stores/feedbackStore"
   import { settings } from "../stores/settingsStore"
   export let field = ''
   export let display = ''
   export let isPlaying = false
   export let checkForMatch
-  $: score = $scores[field]
+  $: score = $analytics.lastGame?.scores?.[field]
   $: hotkeyField = field === 'shapeColor' ? 'shape' : field
 </script>
 
