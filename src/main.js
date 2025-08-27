@@ -18,27 +18,36 @@ window.addEventListener('unhandledrejection', (e) => {
   })
 })
 
-let app
+let appContainer = document.getElementById('app');
+let currentAppInstance = null;
 
 // Wait for auth state to be determined before mounting
 onAuthStateChanged(auth, async (user) => {
-  // Unmount existing app if it exists
-  if (app) {
-    app.$destroy()
+  // Destroy existing app if it exists
+  if (currentAppInstance) {
+    currentAppInstance.$destroy();
+    currentAppInstance = null;
+    // Clear the container's innerHTML to ensure a clean slate
+    appContainer.innerHTML = '';
   }
 
   if (user) {
     // User is logged in, mount main app
-    // await syncGames() // Removed as syncGames is handled by analyticsStore and App.svelte
-    app = mount(App, {
-      target: document.getElementById('app'),
-    })
+    currentAppInstance = new App({
+      target: appContainer,
+      props: {
+        // Any props for App.svelte
+      }
+    });
   } else {
     // User is not logged in, mount login component
-    app = mount(Login, {
-      target: document.getElementById('app'),
-    })
+    currentAppInstance = new Login({
+      target: appContainer,
+      props: {
+        // Any props for Login.svelte
+      }
+    });
   }
-})
+});
 
 export default app
