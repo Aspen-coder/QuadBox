@@ -3,7 +3,6 @@ export let title
 import { PanelLeftClose, PanelLeftOpen } from '@lucide/svelte'
 import { onMount } from 'svelte'
 import { settings } from '../stores/settingsStore'
-import { scores } from '../stores/scoreStore'
 import { analytics } from '../stores/analyticsStore'
 import { mobile } from '../stores/mobileStore'
 import { autoProgression } from '../stores/autoProgressionStore'
@@ -100,16 +99,16 @@ $: gameSettings = $settings.gameSettings[$settings.mode]
       class:fallback={$autoProgression.fallback}>
       <div>N = {gameSettings.nBack}</div>
       <div>{title.toUpperCase()}</div>
-      {#if $scores.total && $mobile}
-      <div>{($scores.total.percent * 100).toFixed(0)}%</div>
+      {#if $analytics.lastGame && $mobile}
+      <div>{($analytics.lastGame.total.percent * 100).toFixed(0)}%</div>
       {/if}
     </div>
     <div class="justify-self-end flex items-center gap-4 pr-2">
       {#if !isPlaying && !$mobile && $analytics.playTime}
       <div>Today: {$analytics.playTime}</div>
       {/if}
-      {#if $scores.total && !isPlaying && !$mobile}
-      <div>Last: {($scores.total.percent * 100).toFixed(0)}%</div>
+      {#if $analytics.lastGame && !isPlaying && !$mobile}
+      <div>Last: {($analytics.lastGame.total.percent * 100).toFixed(0)}%</div>
       {/if}
       <div class="flex">
         <InfoPopup />

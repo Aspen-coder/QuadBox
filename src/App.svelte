@@ -61,7 +61,8 @@ onAuthStateChanged(auth, async (user) => {
         }));
       });
       // Load Firebase scores when user logs in
-      analytics.loadFirebaseScores();
+      // analytics.loadFirebaseScores(); // Removed as syncAllGames will handle it
+      analytics.syncAllGames();
     } catch (error) {
       console.error("Error during initial settings load/setup:", error);
     }
