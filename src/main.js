@@ -6,6 +6,9 @@ import { error } from './stores/errorStore'
 import { auth } from './lib/firebase' // Your firebase config
 import { onAuthStateChanged } from 'firebase/auth'
 import AuthWrapper from './AuthWrapper.svelte'; // Import the new AuthWrapper
+import { injectAnalytics } from '@vercel/analytics/sveltekit'; // Import Vercel Analytics
+
+injectAnalytics(); // Initialize Vercel Analytics
 
 window.addEventListener('error', (e) => {
   error.set({ message: e.message, stacktrace: e.stack })
