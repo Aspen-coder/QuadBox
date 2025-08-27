@@ -42,6 +42,7 @@ onAuthStateChanged(auth, async (user) => {
           ...current,
           gameSettings: firestoreSettings
         }));
+        console.log("Settings updated with Firebase data in App.svelte:", get(settings));
       } else {
         // If no settings exist in Firestore, save current local settings
         await saveGameSettingsToFirestore(get(settings).gameSettings);
