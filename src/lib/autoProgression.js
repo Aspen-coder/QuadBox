@@ -3,7 +3,7 @@ import { get } from 'svelte/store'
 import { autoProgression } from '../stores/autoProgressionStore'
 import { settings } from '../stores/settingsStore'
 import { gameSettings } from '../stores/gameSettingsStore'
-import { saveGameToCloud } from './syncManager'
+// import { saveGameToCloud } from './syncManager' // Removed as sync is handled by analyticsStore
 
 const takeUntil = (array, condition) => {
   const i = array.findIndex(condition)
