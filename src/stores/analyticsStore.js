@@ -185,4 +185,4 @@ const createAnalyticsStore = () => {
 export const analytics = createAnalyticsStore()
 
 // Initial sync when the store is created
-analytics.syncAllGames();
+// analytics.syncAllGames(); // Removed to prevent early execution before auth state is certain

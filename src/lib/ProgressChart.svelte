@@ -93,8 +93,10 @@
 
   const getDailyAveragesByTitle = (games) => {
     const grouped = {}
+    console.log("Games array in getDailyAveragesByTitle:", games);
 
     for (const game of games) {
+      console.log("Processing game object:", game);
       const { ncalc, title, dayTimestamp } = game || {}; // Safely destructure with default empty object
 
       if (!title || !('ncalc' in game) || dayTimestamp === undefined) continue; // Ensure properties exist
