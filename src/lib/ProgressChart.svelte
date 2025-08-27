@@ -95,7 +95,7 @@
     const grouped = {}
 
     for (const { ncalc, title, dayTimestamp } of games) {
-      if (!title || !('ncalc' in { ncalc, title, dayTimestamp })) continue // Ensure ncalc exists
+      if (!title || !('ncalc' in game)) continue // Ensure ncalc exists directly on game object
 
       if (!grouped[title]) grouped[title] = {}
       if (!grouped[title][dayTimestamp]) grouped[title][dayTimestamp] = []
@@ -132,18 +132,16 @@
   $: {
     if (canvas) {
       if (chart) {
-        chart.data.datasets = datasets;
-        chart.options = getChartOptions($settings.theme);
-        chart.update();
-      } else {
-        chart = new Chart(canvas.getContext('2d'), {
-          type: 'line',
-          data: {
-            datasets
-          },
-          options: getChartOptions($settings.theme),
-        });
+        chart.destroy(); // Destroy existing chart
       }
+      chart = new Chart(canvas.getContext('2d'), {
+        type: 'line',
+        data: {
+          datasets
+        },
+        options: getChartOptions($settings.theme),
+      });
+      handleResize(); // Ensure resize is called after recreation
     }
   }
 

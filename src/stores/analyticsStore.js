@@ -1,5 +1,5 @@
 import { writable } from 'svelte/store'
-import { addGame, getAllCompletedGames } from '../lib/gamedb'
+import { addGame, getAllCompletedGames, addScoreMetadata } from '../lib/gamedb'
 import { formatSeconds } from '../lib/utils'
 import { getLastRecentGame, getPlayTimeSince4AM } from '../lib/gamedb'
 import { saveScoreToFirestore, loadScoresFromFirestore } from '../lib/firebaseService'
@@ -10,12 +10,13 @@ const auth = getAuth(); // Get the Firebase Auth instance
 const loadAnalytics = async () => {
   const lastGame = await getLastRecentGame()
   const playTime = await getPlayTimeSince4AM()
-  const firebaseScores = await loadScoresFromFirestore()
+  // firebaseScores is now handled by syncAllGames and consolidated into allGames
+  // const firebaseScores = await loadScoresFromFirestore()
 
   return {
     lastGame,
     playTime: playTime > 0 ? formatSeconds(playTime) : null,
-    firebaseScores: firebaseScores || [], // Renamed to allGames or something more general soon
+    // firebaseScores: firebaseScores || [], 
   }
 }
 
@@ -52,7 +53,7 @@ const computeTotal = (game) => {
 const createAnalyticsStore = () => {
   const { subscribe, set, update } = writable({})
   // Initialize with an empty object and then load data asynchronously
-  set({ lastGame: null, playTime: null, firebaseScores: [] });
+  set({ lastGame: null, playTime: null, allGames: [] });
   // loadAnalytics().then(analyticsData => set(analyticsData)); // This will be handled by syncAllGames
 
   const syncAllGames = async () => {
@@ -61,14 +62,24 @@ const createAnalyticsStore = () => {
       console.log('No user logged in, skipping score sync.');
       // Load only local data if no user
       const localAnalytics = await loadAnalytics();
-      update(current => ({ ...current, ...localAnalytics, allGames: localAnalytics.firebaseScores }));
+      // We only want to display games with metadata, so filter out incomplete ones.
+      const gamesWithMetadata = (await getAllCompletedGames()).map(game => {
+        addScoreMetadata(game);
+        return game;
+      }).filter(game => 'ncalc' in game);
+      
+      update(current => ({ ...current, ...localAnalytics, allGames: gamesWithMetadata }));
       return;
     }
 
     console.log('Starting full score sync...');
 
-    const localGames = await getAllCompletedGames();
-    const firebaseGames = await loadScoresFromFirestore();
+    let localGames = await getAllCompletedGames();
+    let firebaseGames = await loadScoresFromFirestore();
+
+    // Apply metadata to all games before processing
+    localGames.forEach(addScoreMetadata);
+    firebaseGames.forEach(addScoreMetadata);
 
     const localMap = new Map(localGames.map(game => [game.timestamp, game]));
     const firebaseMap = new Map(firebaseGames.map(game => [game.timestamp, game]));
@@ -93,6 +104,10 @@ const createAnalyticsStore = () => {
     const updatedLocalGames = await getAllCompletedGames();
     const updatedFirebaseScores = await loadScoresFromFirestore();
 
+    // Apply metadata to reloaded games as well
+    updatedLocalGames.forEach(addScoreMetadata);
+    updatedFirebaseScores.forEach(addScoreMetadata);
+
     const mergedGamesMap = new Map();
 
     // Add local games first (or firebase if preferred for initial base)
@@ -101,7 +116,7 @@ const createAnalyticsStore = () => {
     // Add Firebase games, overwriting local if timestamps match
     updatedFirebaseScores.forEach(game => mergedGamesMap.set(game.timestamp, game));
 
-    const allConsolidatedGames = Array.from(mergedGamesMap.values());
+    const allConsolidatedGames = Array.from(mergedGamesMap.values()).filter(game => 'ncalc' in game);
 
     // Recalculate lastGame and playTime based on consolidated games
     const currentPlayTime = await getPlayTimeSince4AM();
@@ -113,7 +128,7 @@ const createAnalyticsStore = () => {
       lastGame: lastGameData,
       playTime: currentPlayTime > 0 ? formatSeconds(currentPlayTime) : null,
       allGames: allConsolidatedGames,
-      firebaseScores: updatedFirebaseScores // Keep this for now if other components rely on it
+      // firebaseScores: updatedFirebaseScores // Removed as allGames is now the consolidated list
     }));
     console.log('Full score sync complete and analytics store updated.');
   };
@@ -121,6 +136,25 @@ const createAnalyticsStore = () => {
   return {
     subscribe,
     scoreTrials: async (gameInfo, scoresheet, status, nBack) => {
+      // Build scores object (removed as computeTotal now handles this)
+      const scores = {}
+      for (const tag of gameInfo.tags) {
+        scores[tag] = { hits: 0, misses: 0 }
+      }
+
+      // Count hits/misses
+      for (const answers of scoresheet) {
+        for (const tag of gameInfo.tags) {
+          if (tag in answers) {
+            if (answers[tag]) {
+              scores[tag].hits++
+            } else {
+              scores[tag].misses++
+            }
+          }
+        }
+      }
+
       // Build full game object
       const gameObj = {
         ...gameInfo,
