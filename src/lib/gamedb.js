@@ -220,6 +220,7 @@ export const getYearOfPlayTime = async () => {
 
 
 const addScoreMetadata = (game) => {
+  console.log("addScoreMetadata received game object:", game);
   if (game.status === 'tombstone') {
     return game
   }
