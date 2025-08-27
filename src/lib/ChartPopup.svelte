@@ -50,11 +50,13 @@
       <div class="w-full h-[65svh] overflow-y-auto">
         {#if tab === 'recent-games'}
         <RecentGames />
-        {:else}
+        {:else if $analytics.allGames?.length > 0}
         <TimeStats />
         <div class="h-[50svh]">
           <ProgressChart />
         </div>
+        {:else}
+        <p>No game data available to display chart.</p>
         {/if}
       </div>
       <div class="flex flex-row-reverse items-center justify-between select-none">

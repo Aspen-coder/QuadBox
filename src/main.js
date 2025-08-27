@@ -50,4 +50,4 @@ onAuthStateChanged(auth, async (user) => {
   }
 });
 
-export default app
+// export default app // Removed as it's not necessary for mounting
