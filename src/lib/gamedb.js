@@ -226,7 +226,15 @@ const addScoreMetadata = (game) => {
   }
   game.dayTimestamp = getTruncatedDate(game.timestamp).getTime()
   game.total = { hits: 0, misses: 0, percent: 0, possible: 0, ncalc: 0 }
-  for (const tag of game.tags) {
+  
+  // Ensure game.tags is an array, defaulting to an empty array if not present or not an array
+  const tagsToProcess = Array.isArray(game.tags) ? game.tags : [];
+  
+  for (const tag of tagsToProcess) {
+    // Initialize game.scores[tag] if it doesn't exist, to prevent errors for old data
+    if (!game.scores[tag]) {
+      game.scores[tag] = { hits: 0, misses: 0 };
+    }
     game.total.hits += game.scores[tag].hits
     game.total.misses += game.scores[tag].misses
     game.scores[tag].possible = game.scores[tag].hits + game.scores[tag].misses

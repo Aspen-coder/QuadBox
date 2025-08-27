@@ -38,11 +38,18 @@ onAuthStateChanged(auth, async (user) => {
     try {
       const firestoreSettings = await loadGameSettingsFromFirestore();
       if (firestoreSettings) {
-        settings.update(current => ({
-          ...current,
-          gameSettings: firestoreSettings
-        }));
-        console.log("Settings updated with Firebase data in App.svelte:", get(settings));
+        settings.update(current => {
+          const updatedSettings = {
+            ...current,
+            gameSettings: firestoreSettings
+          };
+          // Ensure the current mode exists in the loaded settings, otherwise default
+          if (!updatedSettings.gameSettings[updatedSettings.mode]) {
+            updatedSettings.mode = 'quad'; // Default to 'quad' if current mode is not found
+            console.warn("Current mode not found in loaded Firebase settings. Defaulting to 'quad'.");
+          }
+          return updatedSettings;
+        });
       } else {
         // If no settings exist in Firestore, save current local settings
         await saveGameSettingsToFirestore(get(settings).gameSettings);
@@ -53,6 +60,8 @@ onAuthStateChanged(auth, async (user) => {
           gameSettings: updatedSettings
         }));
       });
+      // Load Firebase scores when user logs in
+      analytics.loadFirebaseScores();
     } catch (error) {
       console.error("Error during initial settings load/setup:", error);
     }

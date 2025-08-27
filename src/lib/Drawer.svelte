@@ -78,7 +78,6 @@ onMount(() => {
 })
 
 $: gameSettings = $settings.gameSettings[$settings.mode]
-console.log("gameSettings in Drawer.svelte:", $settings.gameSettings);
 </script>
 
 <div class="relative flex flex-col h-svh overflow-hidden">
