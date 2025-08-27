@@ -3,13 +3,16 @@
   import { getLastMonthGames } from "../lib/gamedb"
   import { settings } from "../stores/settingsStore"
   import { recentGamesState } from "../stores/recentGamesStore"
+  import { analytics } from "../stores/analyticsStore"
   import { formatSeconds } from "./utils"
 
-  let games = []
+  // Games are now sourced from the analytics store
+  $: games = ($analytics.allGames || []).filter(game => game.status !== 'tombstone');
 
-  onMount(async () => {
-    games = await getLastMonthGames()
-  })
+  // The onMount block for fetching games is no longer needed as analytics store provides them
+  // onMount(async () => {
+  //   games = await getLastMonthGames()
+  // })
 
   const getStatusColor = (status) => {
     switch (status) {

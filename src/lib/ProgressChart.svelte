@@ -2,8 +2,9 @@
   import { onMount, onDestroy } from 'svelte'
   import { Chart, registerables } from 'chart.js'
   import 'chartjs-adapter-date-fns'
-  import { getAllCompletedGames } from '../lib/gamedb'
+  // import { getAllCompletedGames } from '../lib/gamedb' // Data now comes from analytics store
   import { settings } from '../stores/settingsStore'
+  import { analytics } from '../stores/analyticsStore' // Import analytics store
 
   Chart.register(...registerables)
   Chart.defaults.font.family = 'Go Mono'
@@ -94,7 +95,7 @@
     const grouped = {}
 
     for (const { ncalc, title, dayTimestamp } of games) {
-      if (!title) continue
+      if (!title || !('ncalc' in { ncalc, title, dayTimestamp })) continue // Ensure ncalc exists
 
       if (!grouped[title]) grouped[title] = {}
       if (!grouped[title][dayTimestamp]) grouped[title][dayTimestamp] = []
@@ -124,19 +125,42 @@
     return datasets
   }
 
-  onMount(async () => {
-    const games = (await getAllCompletedGames()).filter(game => 'ncalc' in game)
-    const datasets = getDailyAveragesByTitle(games)
+  $: allGames = ($analytics.allGames || []).filter(game => game.status !== 'tombstone' && 'ncalc' in game);
 
-    chart = new Chart(canvas.getContext('2d'), {
-      type: 'line',
-      data: {
-        datasets
-      },
-      options: getChartOptions($settings.theme),
-    })
-    handleResize()
-  })
+  $: datasets = getDailyAveragesByTitle(allGames);
+
+  $: {
+    if (canvas) {
+      if (chart) {
+        chart.data.datasets = datasets;
+        chart.options = getChartOptions($settings.theme);
+        chart.update();
+      } else {
+        chart = new Chart(canvas.getContext('2d'), {
+          type: 'line',
+          data: {
+            datasets
+          },
+          options: getChartOptions($settings.theme),
+        });
+      }
+    }
+  }
+
+  // Old onMount data fetching is removed as it's now reactive
+  // onMount(async () => {
+  //   const games = (await getAllCompletedGames()).filter(game => 'ncalc' in game)
+  //   const datasets = getDailyAveragesByTitle(games)
+  //
+  //   chart = new Chart(canvas.getContext('2d'), {
+  //     type: 'line',
+  //     data: {
+  //       datasets
+  //     },
+  //     options: getChartOptions($settings.theme),
+  //   })
+  //   handleResize()
+  // })
 
   const handleResize = () => {
     if (chart) {
