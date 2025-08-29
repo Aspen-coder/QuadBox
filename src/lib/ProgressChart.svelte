@@ -137,6 +137,7 @@
     if (canvas) {
       if (chart) {
         chart.destroy(); // Destroy existing chart
+        chart = null;
       }
       chart = new Chart(canvas.getContext('2d'), {
         type: 'line',
@@ -174,6 +175,7 @@
   onDestroy(() => {
     if (chart) {
       chart.destroy()
+      chart = null;
     }
     window.removeEventListener('resize', handleResize)
   })

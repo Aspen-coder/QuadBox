@@ -3,7 +3,10 @@
   import { settings } from "../stores/settingsStore"
 
   const toggleTheme = () => {
-    settings.update('theme', $settings.theme === 'light' ? 'dark' : 'light')
+    settings.update(current => ({
+      ...current,
+      theme: current.theme === 'light' ? 'dark' : 'light'
+    }))
   }
 </script>
 

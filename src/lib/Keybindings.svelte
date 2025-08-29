@@ -17,19 +17,25 @@
 
     const keyCombo = event.key.length === 1 ? event.key.toUpperCase() : event.key
     $settings.hotkeys[editingKey] = keyCombo
-    settings.update('hotkeys', $settings.hotkeys)
+    settings.update(currentSettings => ({
+      ...currentSettings,
+      hotkeys: { ...currentSettings.hotkeys, [editingKey]: keyCombo }
+    }))
 
     editingKey = null
   }
 
   const resetToDefault = () => {
-    $settings.hotkeys = {
+    const defaultHotkeys = {
       'position': 'A',
       'color': 'F',
       'shape': 'J',
       'audio': 'L',
     }
-    settings.update('hotkeys', $settings.hotkeys)
+    settings.update(currentSettings => ({
+      ...currentSettings,
+      hotkeys: defaultHotkeys
+    }))
   }
 
 </script>
